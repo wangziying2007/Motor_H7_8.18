@@ -58,7 +58,7 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-DJMotor DJ_Motor[USE_DJNUM]; // 控制几个电机
+DJMotor DJ_Motor[USE_DJNUM]; 
 /* USER CODE END 0 */
 
 /**

@@ -1,5 +1,91 @@
 #include "motor.h"
 
+void DJmotor_Init(void)
+{
+    DJMotorParam dj2006_param;
+    DJMotorParam dj3508_param;
+    DJMotorLimit limit;
+
+    /* M2006 电机档案（DJMotorParam 全字段）*/
+    dj2006_param.ParamID = 0x1ffU;
+    dj2006_param.Gear_ratio = 1.0f;
+    dj2006_param.Reduction_ratio = M2006_RATIO;
+    dj2006_param.PulsePerRound = 8191U;
+    dj2006_param.CurrentLimit_raw = 4500;
+
+    /* M3508 电机档案（DJMotorParam 全字段）*/
+    dj3508_param.ParamID = 0x200U;
+    dj3508_param.Gear_ratio = 1.0f;
+    dj3508_param.Reduction_ratio = M3508_RATIO;
+    dj3508_param.PulsePerRound = 8191U;
+    dj3508_param.CurrentLimit_raw = 10000;
+
+    /* 默认限幅参数（DJMotorLimit 全字段）*/
+    limit.RPMLimitFlag   = 0U;
+    limit.SpeedRPMLimit  = 10000.0f;
+    limit.PosAngleLimitFlag = 0U;
+    limit.MinAngle_deq   = 0.0f;
+    limit.MaxAngle_deq   = 360.0f;
+    limit.PosRPMFlag     = 1U;
+    limit.PosRPMLimit    = 8000.0f;
+
+    for (uint32_t i = 0; i < USE_DJNUM; i++)
+    {
+        DJMotor *motor = &DJ_Motor[i];
+
+        /* DJMotor 基础字段 */
+        motor->ID = (uint8_t)(i + 1U);
+        motor->MODE_Cur = DJ_Disable; /* 上电失能:发 0 电流 */
+        motor->param = dj3508_param;  /* 先给默认档案，下面按型号覆盖 */
+        motor->limit = limit;
+        motor->lastRxTick = HAL_GetTick();
+        motor->rxLost = 0U;
+
+        /* DJMotorVal 全字段初始化：设定值 / 当前值 / 上一次值 全部清零 */
+        motor->valSet.current_raw = 0;
+        motor->valSet.speed_rpm   = 0;
+        motor->valSet.PulseRead   = 0;
+        motor->valSet.PulseGap    = 0;
+        motor->valSet.PulseTotal  = 0;
+        motor->valSet.angle_deg   = 0.0f;
+        motor->valSet.current_A   = 0.0f;
+        motor->valSet.temperature_C = 0;
+
+        motor->valNow = motor->valSet;
+        motor->valPre = motor->valSet;
+
+        /* PIDType 全字段初始化：位置环（位置式）*/
+        PID_Reset(&motor->posPID);
+        motor->posPID.KP = 0.07f;
+        motor->posPID.KI = 0.0005f;
+        motor->posPID.KD = 0.0f;
+        motor->posPID.mode = PIDPOS;
+        motor->posPID.intgral = 0.0f;
+
+        /* PIDType 全字段初始化：速度环（增量式）*/
+        PID_Reset(&motor->velPID);
+        motor->velPID.KP = 5.5f;
+        motor->velPID.KI = 0.3f;
+        motor->velPID.KD = 0.01f;
+        motor->velPID.mode = PIDINC;
+        motor->velPID.intgral = 0.0f;
+    }
+
+    /* 按型号覆写对应电机的物理档案（M2006 在前，M3508 在后）*/
+    for (uint32_t i = 0; i < M2006_NUM && i < USE_DJNUM; i++)
+    {
+        DJ_Motor[i].ID = (uint8_t)(i + 1U);
+        DJ_Motor[i].param = dj2006_param;
+    }
+
+    for (uint32_t i = 0; i < M3508_NUM && (i + M2006_NUM) < USE_DJNUM; i++)
+    {
+        DJ_Motor[i + M2006_NUM].ID = (uint8_t)(i + M2006_NUM + 1U);
+        DJ_Motor[i + M2006_NUM].param = dj3508_param;
+    }
+}
+
+
 //获取CAN句柄
 FDCAN_HandleTypeDef *DJmotor_GetCanHandle(void)
 {
