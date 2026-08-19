@@ -37,7 +37,7 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-#define USE_DJNUM 1
+#define USE_DJNUM 8        //用到的电机数量
 #define M3508_RATIO 36.0f
 
 /* USER CODE END ET */

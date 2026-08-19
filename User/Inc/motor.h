@@ -9,9 +9,9 @@ extern "C"
 #include "pid.h"
 #include "main.h"
 
-    // 辅助宏：绝对值、符号函数（用于编码器绕圈补偿）
-    #define ABS(x)     (((x) < 0) ? -(x) : (x))
-    #define GetSign(x) (((x) < 0) ? (-1) : ((x) > 0 ? 1 : 0))
+// 辅助宏：绝对值、符号函数（用于编码器绕圈补偿）
+#define ABS(x) (((x) < 0) ? -(x) : (x))                   // 取绝对值
+#define GetSign(x) (((x) < 0) ? (-1) : ((x) > 0 ? 1 : 0)) // 取正负号
 
     // 电机模式枚举
     typedef enum
@@ -24,14 +24,14 @@ extern "C"
     // 反馈及设定值结构体
     typedef struct
     {
-        int16_t current_raw; // 要发送给电调的电流值
-        int16_t speed_rpm;   // 反馈转速
-        int16_t PulseRead;   // 读取到的原始脉冲
-        int16_t PulseGap;    // 本次与上次的脉冲差
-        int32_t PulseTotal;  // 累计总脉冲
-        float angle_deg;     // 计算出来的机械角度
-        float current_A;     // 换算后的电流（安培）
-        int8_t temperature_C;// 电机温度（摄氏度）
+        int16_t current_raw;  // 当前电流值
+        int16_t speed_rpm;    // 反馈机械转速
+        int16_t PulseRead;    // 读取到的原始脉冲
+        int16_t PulseGap;     // 本次与上次的脉冲差
+        int32_t PulseTotal;   // 累计总脉冲
+        float angle_deg;      // 计算出来的机械角度
+        float current_A;      // 换算后的电流（安培）
+        int8_t temperature_C; // 电机温度（摄氏度）
     } DJMotorVal;
 
     typedef struct
@@ -46,12 +46,12 @@ extern "C"
     typedef struct
     {
         uint8_t RPMLimitFlag;      // 是否启用速度限幅
-        float  SpeedRPMLimit;      // 速度上限
+        float SpeedRPMLimit;       // 速度上限
         uint8_t PosAngleLimitFlag; // 是否启用位置（角度）限幅
-        float  MinAngle_deq;       // 最小角度
-        float  MaxAngle_deq;       // 最大角度
+        float MinAngle_deq;        // 最小角度
+        float MaxAngle_deq;        // 最大角度
         uint8_t PosRPMFlag;        // 位置模式内环速度限幅开关
-        float  PosRPMLimit;        // 位置模式内环速度上限
+        float PosRPMLimit;         // 位置模式内环速度上限
     } DJMotorLimit;
 
     // 电机本体结构体
@@ -67,12 +67,12 @@ extern "C"
         DJMotorParam param;               // 电机物理档案
         DJMotorLimit limit;               // 电机限幅参数
         uint32_t lastRxTick;              // 最近一次收到反馈时的时间戳（HAL_GetTick）
-        uint8_t  rxLost;                  /* 失联标志：1=超过 CONNECT_TIMEOUT 未收到反馈，
+        uint8_t rxLost;                   /* 失联标志：1=超过 CONNECT_TIMEOUT 未收到反馈，
                                              状态机会强制失能发 0 电流 */
     } DJMotor;
 
     // 全局电机数组（定义在 main.c，这里只声明）
-    extern DJMotor DJ_Motor[1];
+    extern DJMotor DJ_Motor[USE_DJNUM];
 
     extern FDCAN_HandleTypeDef hfdcan2; // 声明 CubeMX 生成的 CAN 句柄
 

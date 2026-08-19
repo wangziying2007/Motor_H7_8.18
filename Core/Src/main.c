@@ -58,7 +58,7 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-DJMotor DJ_Motor[1]; // 控制 1 个电机
+DJMotor DJ_Motor[USE_DJNUM]; // 控制几个电机
 /* USER CODE END 0 */
 
 /**
@@ -130,7 +130,7 @@ int main(void)
   PID_Reset(&DJ_Motor[0].velPID);
   PID_Reset(&DJ_Motor[0].posPID);
   DJ_Motor[0].velPID.mode = PIDINC;  // 速度环用增量式
-  DJ_Motor[0].posPID.mode = PIDINC;
+  DJ_Motor[0].posPID.mode = PIDPOS;
   DJ_Motor[0].velPID.KP = 0.05f;
   DJ_Motor[0].velPID.KI = 0.2f;
   DJ_Motor[0].velPID.KD = 0.0f;
@@ -139,7 +139,7 @@ int main(void)
   DJ_Motor[0].posPID.KD = 0.0f;
 
   /* 7. 起步设定：低速速度模式，收到反馈稳定后再慢慢加目标 */
-  DJ_Motor[0].valSet.speed_rpm = 100; // 起步目标速度 100 RPM（低）
+  DJ_Motor[0].valSet.speed_rpm = 0; // 起步目标速度 100 RPM（低）
   DJ_Motor[0].valSet.current_raw = 0;
   DJ_Motor[0].MODE_Cur = DJ_RPM;      // 进入速度模式
   DJ_Motor[0].lastRxTick = HAL_GetTick();
@@ -151,8 +151,6 @@ int main(void)
   while (1)
   {
     /* 主循环保持空转。控制由 TIM2 中断里的 DJMotor_Func 驱动，
-       若要改目标速度在这里改 DJ_Motor[0].valSet.speed_rpm 即可。 */
-
     HAL_Delay(10);
     /* USER CODE END WHILE */
 
@@ -233,6 +231,23 @@ int main(void)
       }
     }
   }
+
+  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
+  {
+    /* USER CODE BEGIN Callback 0 */
+
+    /* USER CODE END Callback 0 */
+    if (htim->Instance == TIM1)
+    {
+      HAL_IncTick();
+    }
+    /* USER CODE BEGIN Callback 1 */
+    if (htim->Instance == TIM2)
+    {
+      DJMotor_Func(); // 每 1ms 调用一次
+    }
+    /* USER CODE END Callback 1 */
+  }
   /* USER CODE END 4 */
 
   /* MPU Configuration */
@@ -281,22 +296,9 @@ int main(void)
    * @param  htim : TIM handle
    * @retval None
    */
-  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
-  {
-    /* USER CODE BEGIN Callback 0 */
-
-    /* USER CODE END Callback 0 */
-    if (htim->Instance == TIM1)
-    {
-      HAL_IncTick();
-    }
-    /* USER CODE BEGIN Callback 1 */
-    if (htim->Instance == TIM2)
-    {
-      DJMotor_Func(); // 每 1ms 调用一次
-    }
+  
     /* USER CODE END Callback 1 */
-  }
+  
 
   /**
    * @brief  This function is executed in case of error occurrence.

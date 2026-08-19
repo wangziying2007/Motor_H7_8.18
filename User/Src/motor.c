@@ -1,8 +1,9 @@
 #include "motor.h"
 
+//获取CAN句柄
 FDCAN_HandleTypeDef *DJmotor_GetCanHandle(void)
 {
-    return &hfdcan2;
+    return &hfdcan2;// 以后如果换 CAN 接口，只需要改这一行，隔离底层硬件依赖
 }
 
 void DJmotor_AngleCalculate(DJMotor *motor)
@@ -50,12 +51,12 @@ void DJMotor_Receive(FDCAN_RxHeaderTypeDef Rxheader, uint8_t *Rx_data)
     motor->valNow.speed_rpm = (int16_t)(((uint16_t)Rx_data[2] << 8) | Rx_data[3]);
     motor->valNow.current_raw = (int16_t)(((uint16_t)Rx_data[4] << 8) | Rx_data[5]);
 
-    if (motor->param.Reduction_ratio == M3508_RATIO)
+    if (motor->param.Reduction_ratio == M3508_RATIO)              // C620 电调
     {
         motor->valNow.temperature_C = (int8_t)Rx_data[6];
         motor->valNow.current_A = (float)motor->valNow.current_raw * 0.0012207f;
     }
-    else
+    else                                                          // C610 电调
     {
         motor->valNow.current_A = (float)motor->valNow.current_raw / 10000.0f * 10.0f;
     }
@@ -71,7 +72,7 @@ void DJMotor_Receive(FDCAN_RxHeaderTypeDef Rxheader, uint8_t *Rx_data)
 
 void EncodeS16Data(int16_t *src, uint8_t *dst)
 {
-    dst[0] = (uint8_t)((*src >> 8) & 0xFF);
+    dst[0] = (uint8_t)(*src >> 8);
     dst[1] = (uint8_t)(*src & 0xFF);
 }
 
@@ -140,7 +141,7 @@ float Clamp(float val, float min, float max)
 
 void DJMotor_Func(void)
 {
-    for (uint32_t i = 0; i < 1; i++)
+    for (uint32_t i = 0; i < USE_DJNUM; i++)
     {
         DJMotor *motor = &DJ_Motor[0];
 
@@ -164,7 +165,7 @@ void DJMotor_Func(void)
             continue; // 当前电机处理结束，跳到下一个循环
         }
 
-        // 速度模式（参考 PPT 第 15 页）
+        // 速度模式
         if (motor->MODE_Cur == DJ_RPM)
         {
             // 1. 把目标速度乘以减速比，转化为电机轴本身的目标速度
